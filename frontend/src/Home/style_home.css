@@ -1,0 +1,53 @@
+html, body {
+  margin: 0;
+}
+
+.wholePage {
+  background-color: black;
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+}
+
+h1 {
+  color: white;
+  font-size: 90px;
+  font-family: Garamond, serif;
+}
+
+input{
+  color: white;
+  width: 50%;
+  height: 40px;
+  border: 2px solid red;
+  background-color: black;
+  border-radius: 15px;
+  font-size: 18px;
+  font-family: 'Courier New', monospace;
+}
+
+button {
+  width: 100px;
+  height: 46px;
+  color: white;
+  background-color: black;
+  border: 2px solid red;
+  border-radius: 15px;
+  font-size: 15px;
+  font-family: 'Courier New', monospace;
+}
+
+.container {
+  text-align: center;
+}
+
+.video {
+  /* text-align: center; */
+  display: flex;
+  justify-content: center;
+  
+}
