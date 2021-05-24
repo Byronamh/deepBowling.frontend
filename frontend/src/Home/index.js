@@ -6,16 +6,14 @@ import Col from 'react-bootstrap/Col';
 
 import getPresignedUrl from "../services/getPresignedUrl";
 import uploadVideoToBucket from "../services/uploadVideoToBucket";
+import processVideo from "../services/rekognition";
 
 class Home extends React.Component {
     constructor(props) {
         super(props);
         this.handleSubmit = this.handleSubmit.bind(this);
-        this.fileInput = React.createRef();
-        this.state = {
-            inputValue: '',
-            videoUrl: ''
-        };
+        this.state = {}
+        console.log('running project with env:', process.env)
     }
 
     selectFile = async () => {
@@ -41,21 +39,35 @@ class Home extends React.Component {
 
     handleSubmit = async (event) => {
         event.preventDefault();
+        console.log(this.state)
         if (!this.state.file) {
             alert('pick a file first')
             return;
         }
 
-        const uploadUrl = await getPresignedUrl();
-        this.setState(uploadUrl);
+        //@Todo: add loader for "getting things ready"
+        console.info('Fetching presigned url...')
+        const s3UploadData = await getPresignedUrl();
+        console.info('Fetch of presigned url complete', s3UploadData)
+        //@Todo: remove loader for "getting things ready"
+        this.setState({s3UploadData});
 
         const reader = new FileReader();
         reader.readAsText(this.state.file);
-
-        reader.onload = evt => {
+        console.info('Converting file to binary...')
+        reader.onload = async evt => {
+            console.info('File converted to binary')
             const binaryData = evt.target.result
-            uploadVideoToBucket(this.state.uploadURL,binaryData)
-            //@Todo: Implement SDK and add a loader
+            //@Todo: add loader for video upload
+            console.info(`Uploading file to: ${this.state.s3UploadData.uploadURL}`)
+            await uploadVideoToBucket(this.state.s3UploadData.uploadURL, binaryData);
+            console.info('File upload complete')
+            //@Todo: remove loader for video upload
+            //@Todo: add loader for video processing
+            console.info('Video processing started')
+            const videoLabels = await processVideo(this.state.s3UploadData.filename)
+            console.info('Video processing ended, with yield: ', videoLabels)
+            //@Todo: remove loader for video processing
         };
     }
 

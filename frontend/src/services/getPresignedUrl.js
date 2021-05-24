@@ -1,4 +1,4 @@
-const SERVICE_URL = process.env.SERVICE_URL || 'https://3s0mgxr4al.execute-api.us-east-1.amazonaws.com/';
+const SERVICE_URL = process.env.REACT_APP_SERVICE_URL || 'https://3s0mgxr4al.execute-api.us-east-1.amazonaws.com/';
 
 const getPresignedUrl = async () => {
 

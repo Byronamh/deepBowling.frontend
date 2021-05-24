@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import Home from './Home';
 
+require('dotenv').config()
+
 
 
 ReactDOM.render(
