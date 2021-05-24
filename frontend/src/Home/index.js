@@ -1,72 +1,83 @@
 import React from 'react';
 import './style_home.css';
-import ReactPlayer from 'react-player';
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+
+import getPresignedUrl from "../services/getPresignedUrl";
+import uploadVideoToBucket from "../services/uploadVideoToBucket";
 
 class Home extends React.Component {
-	constructor(props) {
-		super(props);
-    this.handleSubmit = this.handleSubmit.bind(this);
-    this.fileInput = React.createRef();
-		this.state = {
-      inputValue: '',
-      videoUrl: ''
-    };
-	}
+    constructor(props) {
+        super(props);
+        this.handleSubmit = this.handleSubmit.bind(this);
+        this.fileInput = React.createRef();
+        this.state = {
+            inputValue: '',
+            videoUrl: ''
+        };
+    }
 
-	// handleChange = (event) => {
-  //   this.setState({inputValue: event.target.value});
-  // }
-  
-	handleSubmit = (event) => {
-    event.preventDefault();
-    alert(
-      `Selected file - ${this.fileInput.current.files[0].name}`
-    )
+    selectFile = async () => {
+        const pickerOpts = {
+            types: [
+                {
+                    description: 'Select a video',
+                    accept: {
+                        'video/*': ['.mov', '.quicktime']
+                    }
+                },
+            ],
+            excludeAcceptAllOption: true,
+            multiple: false
+        };
+        const [fileHandle] = await window.showOpenFilePicker(pickerOpts);
 
-    // this.fileInput.current.files[0]
-  }
+        const fileData = await fileHandle.getFile();
 
-  fileChangeHandler = (event) => {
-    let file_size = event.target.files[0].size;
-    
-  }
+        this.setState({file: fileData})
+        console.log('file set')
+    }
 
+    handleSubmit = async (event) => {
+        event.preventDefault();
+        if (!this.state.file) {
+            alert('pick a file first')
+            return;
+        }
 
-	render () {
-		return (
-			<div className="wholePage">
-				<div className="container">
-					<h1>Hello Bowling Enthusiasts</h1>
-					<div>
-						<label>
+        const uploadUrl = await getPresignedUrl();
+        this.setState(uploadUrl);
 
-              <form onSubmit={this.handleSubmit}>
-                <input type='file' onChange={this.fileChangeHandler} accept=".mov" />
-                <br /> <br />
-                <button>Let's Go!</button>
-              </form>
-						</label>
-            <br /><br />
-            {/* <div className="video">
-              <ReactPlayer url={this.state.videoUrl} className="video" controls="true" />
-            </div>
-            <div>
-              <div>
-                <label>Algo</label>
-              </div>
-              <div>
-              <label>de</label>
-              </div>
-              <div>
-              <label>prueba</label>
-              </div>
-            </div> */}
-					</div>
-				</div>
-			</div>
-	  );
-	}
-  	
+        const reader = new FileReader();
+        reader.readAsText(this.state.file);
+
+        reader.onload = evt => {
+            const binaryData = evt.target.result
+            uploadVideoToBucket(this.state.uploadURL,binaryData)
+            //@Todo: Implement SDK and add a loader
+        };
+    }
+
+    render() {
+        return (
+            <Container className={'wholePage'}>
+                <Row className={'align-items-center justify-content-center'}>
+                    <Col xs={12} lg={6}>
+                        <h1>Hello Bowling Enthusiasts</h1>
+
+                        <form onSubmit={this.handleSubmit}>
+                            <button type={"button"} onClick={this.selectFile}>Select the video file to analyze</button>
+
+                            <br/> <br/>
+                            <button type={"submit"}>Let's Go!</button>
+                        </form>
+                    </Col>
+                </Row>
+            </Container>
+        );
+    }
+
 }
 
 export default Home;

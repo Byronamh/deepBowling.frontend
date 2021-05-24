@@ -2,8 +2,8 @@ const uploadVideoToBucket = async (uploadUrl, binaryVideoData) => {
     const configs = {
         method: 'PUT',
         body: binaryVideoData,
-        headers: {
-            'Content-Type': 'video/mov'
+        headers:{
+            "Content-Type":"video/quicktime"
         }
     };
     const req = await fetch(uploadUrl, configs);
