@@ -2,12 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 // import App from './App';
-import Home from './Home/index';
+import HomeUpload from './Prueba/index';
 
 
 ReactDOM.render(
   <React.StrictMode>
-    <Home />
+    <HomeUpload />
   </React.StrictMode>,
   document.getElementById('root')
 );
