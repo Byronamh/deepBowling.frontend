@@ -7,6 +7,7 @@ import Col from 'react-bootstrap/Col';
 import getPresignedUrl from "../services/getPresignedUrl";
 import uploadVideoToBucket from "../services/uploadVideoToBucket";
 import processVideo from "../services/rekognition";
+import frameBuilderFunction from "../services/cascadingFrame"
 
 class Home extends React.Component {
     constructor(props) {
@@ -39,7 +40,6 @@ class Home extends React.Component {
 
     handleSubmit = async (event) => {
         event.preventDefault();
-        console.log(this.state)
         if (!this.state.file) {
             alert('pick a file first')
             return;
@@ -50,25 +50,25 @@ class Home extends React.Component {
         const s3UploadData = await getPresignedUrl();
         console.info('Fetch of presigned url complete', s3UploadData)
         //@Todo: remove loader for "getting things ready"
+
+
         this.setState({s3UploadData});
 
-        const reader = new FileReader();
-        reader.readAsText(this.state.file);
-        console.info('Converting file to binary...')
-        reader.onload = async evt => {
-            console.info('File converted to binary')
-            const binaryData = evt.target.result
-            //@Todo: add loader for video upload
-            console.info(`Uploading file to: ${this.state.s3UploadData.uploadURL}`)
-            await uploadVideoToBucket(this.state.s3UploadData.uploadURL, binaryData);
-            console.info('File upload complete')
-            //@Todo: remove loader for video upload
-            //@Todo: add loader for video processing
-            console.info('Video processing started')
-            const videoLabels = await processVideo(this.state.s3UploadData.filename)
-            console.info('Video processing ended, with yield: ', videoLabels)
-            //@Todo: remove loader for video processing
-        };
+        //@Todo: add loader for video upload
+        console.info(`Uploading file to: ${this.state.s3UploadData.uploadURL}`)
+        await uploadVideoToBucket(this.state.s3UploadData.uploadURL, this.state.file);
+        console.info('File upload complete')
+        //@Todo: remove loader for video upload
+
+        //@Todo: add loader for video processing
+        console.info('Video processing started')
+        const videoLabels = await processVideo(this.state.s3UploadData.filename)
+        console.info('Video processing ended, with yield: ', videoLabels)
+        //@Todo: remove loader for video processing
+
+        console.info('Building frames for painting')
+        const timestampedFrames = frameBuilderFunction(500, 300, videoLabels);
+        console.info('Frames built: ', timestampedFrames)
     }
 
     render() {

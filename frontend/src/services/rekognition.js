@@ -1,5 +1,5 @@
 import {RekognitionClient, StartLabelDetectionCommand, GetLabelDetectionCommand} from "@aws-sdk/client-rekognition"; // ES Modules import
-const MAX_WAIT_ITERATIONS = 5;
+const MAX_WAIT_ITERATIONS = 8;
 const BUCKET_KEY = process.env.REACT_APP_STORAGE_BUCKET || 'storage.deepbowling';
 const config = {
     region: process.env.REACT_APP_AWS_REGION || "us-east-1",
@@ -9,6 +9,15 @@ const config = {
     }
 }
 const rekognitionClient = new RekognitionClient(config);
+
+const getJobStatus = async JobId =>{
+    const getVideoLabelsRequest = new GetLabelDetectionCommand({JobId});
+
+    const videoLabelsResponse = await rekognitionClient.send(getVideoLabelsRequest);
+    const {JobStatus, Labels, StatusMessage} = videoLabelsResponse;
+    return {JobStatus, Labels, StatusMessage}
+}
+window.getJobStatus = getJobStatus;
 
 const processVideo = async filename => {
     const videoProcessJobRequest = new StartLabelDetectionCommand({
