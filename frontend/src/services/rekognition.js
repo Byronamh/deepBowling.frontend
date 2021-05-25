@@ -10,7 +10,7 @@ const config = {
 }
 const rekognitionClient = new RekognitionClient(config);
 
-const getJobStatus = async JobId =>{
+const getJobStatus = async JobId => {
     const getVideoLabelsRequest = new GetLabelDetectionCommand({JobId});
 
     const videoLabelsResponse = await rekognitionClient.send(getVideoLabelsRequest);
@@ -20,20 +20,24 @@ const getJobStatus = async JobId =>{
 window.getJobStatus = getJobStatus;
 
 const processVideo = async filename => {
-    const videoProcessJobRequest = new StartLabelDetectionCommand({
-            Video: {
-                S3Object: {
-                    Bucket: BUCKET_KEY,
-                    Name: filename
-                }
-            },
-            MinConfidence: 80
-        }
-    );
-    console.info('Starting rekognition task')
-    const {JobId} = await rekognitionClient.send(videoProcessJobRequest);
-    console.info(`Rekognition task started with JobId: ${JobId}`)
-    const getVideoLabelsRequest = new GetLabelDetectionCommand({JobId});
+    const returnable = {
+        Labels: [],
+        message: ''
+    }
+    // const videoProcessJobRequest = new StartLabelDetectionCommand({
+    //         Video: {
+    //             S3Object: {
+    //                 Bucket: BUCKET_KEY,
+    //                 Name: filename
+    //             }
+    //         },
+    //         MinConfidence: 80
+    //     }
+    // );
+    // console.info('Starting rekognition task')
+    // const {JobId} = await rekognitionClient.send(videoProcessJobRequest);
+    // console.info(`Rekognition task started with JobId: ${JobId}`)
+    const getVideoLabelsRequest = new GetLabelDetectionCommand({JobId:'354968ae604cdad9030e5d13bf32d6ff46112711351ed41db7d8fde4b5e731cb'});
 
     console.info('Waiting for job to complete')
     let ct = 0;
@@ -45,21 +49,25 @@ const processVideo = async filename => {
         console.info(`Checked on job status, current status is: ${JobStatus}`)
         if (ct === MAX_WAIT_ITERATIONS) {
             console.warn('MAX NUMBER OF WAIT TIME REACHED, TRY AGAIN?')
-            return []
+            returnable.message = 'Reached max amount of wait time';
+            break;
         }
         if (JobStatus === "IN_PROGRESS") {
             await delay(10)
         }
         if (JobStatus === 'SUCCEEDED') {
-            return Labels
+            returnable.Labels = Labels;
+            returnable.message = 'Analisis complete'
+            break;
         }
         if (JobStatus === 'FAILED') {
-            console.error(StatusMessage)
 
-            return Labels
+            returnable.Labels = Labels;
+            returnable.message = StatusMessage
+            break;
         }
     }
-    return []; // this should never happen, but just in case lol
+    return returnable;
 }
 window.processVideo = processVideo;
 

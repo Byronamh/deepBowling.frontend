@@ -1,22 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Lato&display=swap');
+
 html, body {
+    font-family: 'Lato', sans-serif;
     margin: 0;
+    background-color: #89d1fe !important;
 }
 
 .wholePage {
-    background-color: black;
     height: 100vh;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    text-align: center;
-    align-items: center;
-    justify-content: center;
+}
+
+.m-card {
+    border-radius: 25px;
+    padding: 1.5rem;
+    background: #002240;
 }
 
 h1 {
     color: white;
-    font-size: 90px;
-    font-family: Garamond, serif;
 }
 
 input {
