@@ -3,10 +3,14 @@ const configs = {
     canvasHeight: 0,
     ready: false
 }
+
+// Set max frame sizes
 const setConfigs = (canvasWidth, canvasHeight) => {
     configs.canvasWidth = canvasWidth;
     configs.canvasHeight = canvasHeight;
 }
+
+// Parses the data sent by rekognition, transforms it into pixels based on canvas size.
 const buildBox = (
     {
         Height = 1,
@@ -22,8 +26,11 @@ const buildBox = (
     return {computedHeight, computedWidth, LeftPadding, topPadding};
 }
 
+// parsed entities
 const entities = {};
 
+// Parses the response from rekognition, returns the entities object with the following structure:
+// <number> timestamp: { <string>"Label":[<box><box>],...}
 const buildFrames = (frames) => {
     const timestamps = Object.keys(frames);
     timestamps.forEach(timestamp => {
@@ -50,8 +57,8 @@ const buildFrames = (frames) => {
 
 }
 
-
-export default (canvasWidth, canvasHeight) => {
+// Exposed module function
+const outFn = (canvasWidth, canvasHeight) => {
     setConfigs(canvasWidth, canvasHeight);
     return (frames) => {
         buildFrames(frames);
@@ -59,3 +66,4 @@ export default (canvasWidth, canvasHeight) => {
     };
 
 }
+export default outFn;

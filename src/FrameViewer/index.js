@@ -8,6 +8,7 @@ class FrameViewer extends React.Component {
         this.cache = []
     }
 
+    // Returns a box DOMElement, with positional styles
     drawBox = ({computedHeight, computedWidth, LeftPadding, topPadding}, {Label, Confidence}, key) => {
         return (
             <div
@@ -27,6 +28,8 @@ class FrameViewer extends React.Component {
             </div>
         )
     }
+
+    // Converts frames into Elements
     parseFrames = frames => {
         const entitiesInFrame = Object.keys(frames);
         const returnable = entitiesInFrame.map(
@@ -35,6 +38,7 @@ class FrameViewer extends React.Component {
                 return boxesConfig.map((bc, i) => this.drawBox(bc, {Label, Confidence}, i))
             }
         )
+        // By default it will also show the past frame's labels, you can disable this by setting `window.frameBuffering` to false
         const oldCache = window.frameBuffering ? this.cache : [];
         this.cache = [...returnable];
 

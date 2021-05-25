@@ -5,6 +5,7 @@ import {
     StartProjectVersionCommand,
     StopProjectVersionCommand
 } from "@aws-sdk/client-rekognition";
+// Credentials
 const config = {
     region: process.env.REACT_APP_AWS_REGION || "us-east-1",
     credentials: {
@@ -14,8 +15,10 @@ const config = {
 }
 let useCustomLabels = true;
 
+// One instance to talk to rekognition
 const rekognitionClient = new RekognitionClient(config);
 
+// Process data from one image, send it to rekognition
 const processFrame = async imageData => {
 
     const configs = {
@@ -31,6 +34,7 @@ const processFrame = async imageData => {
     return rekognitionClient.send(imageProcessReq);
 }
 
+// Starts the custom model
 window.startSession = async () => {
     const initProjectCmd = new StartProjectVersionCommand({
         MinInferenceUnits: 1,
@@ -39,12 +43,15 @@ window.startSession = async () => {
     await rekognitionClient.send(initProjectCmd)
 }
 
+// Stops the custom model
 window.endSession = async () => {
     const endProjectCmd = new StopProjectVersionCommand ({
         ProjectVersionArn: process.env.REACT_APP_AWS_MODEL_ARN
     });
     await rekognitionClient.send(endProjectCmd)
 }
+
+// Exposed module function
 const processFrames = async (frames, clientUseCustomLabels = true) => {
     useCustomLabels = clientUseCustomLabels
 

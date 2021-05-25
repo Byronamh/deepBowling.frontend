@@ -1,7 +1,9 @@
 //based on `capture-video-frame`, but optimized for my needs
+
 const canvas = document.createElement("CANVAS");
 
-export default (video) => {
+// Given a video Element, capture a screenshot and convert it into a Uint8Array
+const caputreFrameFromVideo = (video) => {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
@@ -18,4 +20,5 @@ export default (video) => {
         arr[i] = bytes.charCodeAt(i);
     }
     return arr;
-}
+};
+export default caputreFrameFromVideo;

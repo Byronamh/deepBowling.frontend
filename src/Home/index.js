@@ -20,42 +20,47 @@ class Home extends React.Component {
         this.handleSubmit = this.handleSubmit.bind(this);
         window.frameBuffering = true;
         this.state = {
-            showvideo: false,       // toggles display of video or form
-            localPlayerUrl: '',     // stores the url used in the player
-            file: null,             // stores a ref to the selected file
-            loader: {               // configs for the loader
+            showvideo: false,       // Toggles display of video or form
+            localPlayerUrl: '',     // Stores the url used in the player
+            file: null,             // Stores a ref to the selected file
+            loader: {               // Configs for the loader
                 loading: false,
                 message: 'default message'
             },
-            timestampedFrames: [],  // parsed rekognition response
-            playedSeconds: 0,       // last video tick
-            playVideo: false,       // toggles play/pause on video
-            readTimestamps: {},     // stores the timestamps that were already processed for speedup
-            framesToShow: [],       // frames to paint in current tick
-            prevTimestamp: 0,
-            capture: true,
-            framePictureArray: [],
+            timestampedFrames: [],  // Parsed rekognition response
+            playedSeconds: 0,       // Last video tick
+            playVideo: false,       // Toggles play/pause on video
+            readTimestamps: {},     // Stores the timestamps that were already processed for speedup
+            framesToShow: [],       // Frames to paint in current tick
+            prevTimestamp: 0,       // Last frame tick time in ms
+            capture: true,          // When true, the capture process will happen, taking frames of the video and sending them to rekognition
+            framePictureArray: [],  // Array of timestamped frames
         }
 
         window.getFrames = () => this.state.timestampedFrames; //you might want to save the parsed frames after an expensive operation
         window.loadFramesFromMem = this.loadFramesFromMem;// load frames via console
         window.skipCapture = this.skipCapture; // skip capture/load process
         window.toggleVideoExecution = this.toggleVideoExecution // pause/play via command
-        window.useCustomLabels = true;
+        window.useCustomLabels = true; // use DetectCustomLabels or DetectLabels in rekognition.
         console.log('running project with env:', process.env)
 
     }
 
+    //Play/pause video
     toggleVideoExecution = () => this.setState({playVideo: !this.state.playVideo});
 
+    //Loads frames into memory
     loadFramesFromMem = timestampedFrames => this.setState({timestampedFrames});
 
+    //Skips the capture process
     skipCapture = () => this.setState({capture: false});
 
+    //Update the loaders props you can set loading to false to hide it
     updateLoader = (loading, message) => {
         this.setState({loader: {loading, message}});
     }
 
+    //Select file from device explorer.
     selectFile = async () => {
         const pickerOpts = {
             types: [
@@ -77,6 +82,7 @@ class Home extends React.Component {
         console.log('file set')
     }
 
+    // Handle form submit
     handleSubmit = async (event) => {
         event.preventDefault();
         if (!this.state.file) {
@@ -92,6 +98,7 @@ class Home extends React.Component {
         });
     }
 
+    // When video does a tick, update the frames to show
     updateVideoTick = ({playedSeconds}) => {
         const playedSecondsMs = playedSeconds * 1000;
         const {cachedTimestampKeys, readTimestamps, prevTimestamp} = this.state;
@@ -102,6 +109,8 @@ class Home extends React.Component {
         framesToShow.forEach(timestamp => readTimestamps[timestamp] = true);
         this.setState({prevTimestamp: playedSecondsMs, readTimestamps, framesToShow});
     }
+
+    // When the video does a tick, route what action happens, either capture frames or show entities
     videoOnProgress = ({playedSeconds}) => {
         if (this.state.capture) {
             const frame = captureFrame(this.player.wrapper.firstChild);
@@ -110,6 +119,8 @@ class Home extends React.Component {
             this.updateVideoTick({playedSeconds})
         }
     }
+
+    // When the video ends, explose helper functions and if capture was enabled, send images to Rekognition
     videoOnEnd = async () => {
         window.replay = () => {
             this.player.wrapper.firstChild.currentTime = 0
@@ -119,7 +130,7 @@ class Home extends React.Component {
         this.frameBuilder = frameBuilderFunction(this.player.wrapper.clientWidth, this.player.wrapper.clientHeight);
         if (this.state.capture) {
             this.updateLoader(true, 'Sending frames for processing');
-            this.state.framePictureArray.length = 20
+
             const rawTimestampedFrames = await processFrames(this.state.framePictureArray, window.useCustomLabels || true)
             this.updateLoader(true, 'Building View Boxes');
             const timestampedFrames = this.frameBuilder(rawTimestampedFrames);
@@ -133,6 +144,8 @@ class Home extends React.Component {
             this.player.wrapper.firstChild.currentTime = 0
         }
     }
+
+    // Gets the players data
     getVideoRef = player => {
         this.player = player
     }
