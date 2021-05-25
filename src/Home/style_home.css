@@ -20,24 +20,14 @@ h1 {
     color: white;
 }
 
-input {
-    color: white;
-    width: 50%;
-    height: 40px;
-    border: 2px solid red;
-    background-color: black;
-    border-radius: 15px;
-    font-size: 18px;
-    font-family: 'Courier New', monospace;
-}
 
 button {
     min-width: 100px;
     height: 46px;
     color: white;
-    background-color: black;
-    border: 2px solid red;
-    border-radius: 15px;
+    background-color: #002240;
+    border: 2px solid white;
+    border-radius: 15px !important;
     font-size: 15px;
     font-family: 'Courier New', monospace;
 }
