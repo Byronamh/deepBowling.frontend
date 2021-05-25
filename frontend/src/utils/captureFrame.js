@@ -1,3 +1,4 @@
+//based on `capture-video-frame`, but optimized for my needs
 const canvas = document.createElement("CANVAS");
 
 export default (video) => {

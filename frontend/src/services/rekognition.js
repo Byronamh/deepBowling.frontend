@@ -4,7 +4,7 @@ import {
     DetectCustomLabelsCommand,
     StartProjectVersionCommand,
     StopProjectVersionCommand
-} from "@aws-sdk/client-rekognition"; // ES Modules import
+} from "@aws-sdk/client-rekognition";
 const config = {
     region: process.env.REACT_APP_AWS_REGION || "us-east-1",
     credentials: {

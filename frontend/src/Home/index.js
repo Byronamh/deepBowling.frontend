@@ -6,9 +6,6 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 
-import captureVideoFrame from "capture-video-frame";
-import delay from "../utils/delay";
-
 import processFrames from "../services/rekognition";
 import frameBuilderFunction from "../services/cascadingFrame"
 import Loader from "../Loader";
@@ -39,8 +36,20 @@ class Home extends React.Component {
             capture: true,
             framePictureArray: [],
         }
+
+        window.getFrames = () => this.state.timestampedFrames; //you might want to save the parsed frames after an expensive operation
+        window.loadFramesFromMem = this.loadFramesFromMem;// load frames via console
+        window.skipCapture = this.skipCapture; // skip capture/load process
+        window.toggleVideoExecution = this.toggleVideoExecution // pause/play via command
         console.log('running project with env:', process.env)
+
     }
+
+    toggleVideoExecution = () => this.setState({playVideo: !this.state.playVideo});
+
+    loadFramesFromMem = timestampedFrames => this.setState({timestampedFrames});
+
+    skipCapture = () => this.setState({capture: false});
 
     updateLoader = (loading, message) => {
         this.setState({loader: {loading, message}});
