@@ -1,70 +1,112 @@
-# Getting Started with Create React App
+# Deepbowling
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-## Available Scripts
+---
+## Getting started
 
-In the project directory, you can run:
+Run `npm install` to install dependencies.
 
-### `npm start`
+Aditionally, you must have `env-cmd` installed gobally (`npm i -g env-cmd`)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+Run `npm start` to start the app in dev mode. Open [http://localhost:3000](http://localhost:3000) to view it in the
+browser.
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## IAM role configuration
 
-### `npm test`
+```
+@Todo: Describe necessary roles.
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Env file
 
-### `npm run build`
+Add a .env file to the root directory of this project, it must have this shape:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```
+REACT_APP_AWS_REGION = <your region>
+REACT_APP_AWS_ACCESS_KEY_ID = <your user access key>
+REACT_APP_AWS_SECRET_ACCESS_KEY = <your user secret access key>
+REACT_APP_AWS_MODEL_ARN = <the ARN for your trained model (optional)
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## In console commands
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Several helper functions were added to aid and make execution more efficient.
 
-### `npm run eject`
+These functions are available in the `window` scope.
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### `startSession = () => void`
+You **must** call this function if you want to use custom labeling. From experience, call this functin 20 mins before you *need* the model.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+### `endSession = () => void`
+After you finish working with custom label modeling, turn of the model so it doesnt over-charge you account.
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+### `useCustomLabels = true`
+When `window.useCustomLabels` is set to `true` the rekognition sdk will use `DetectLabelsCommand` instead of `DetectCustomLabelsCommand`.
+
+### `frameBuffering = true`
+
+When `window.frameBuffering` is set to `true`, when the video is being played the current and last frames will be
+renedred on screen. When it's not, only the current frames will be rendered.
+
+### `getFrames = () => frames`
+
+This function returns the timestamped frame object. You can store this somewhere (for example clipboard or another file)
+to load the frames later on with `window.loadFramesFromMem(frames)`
+
+### `loadFramesFromMem = frames => void`
+
+This function sets the timestamped frame object to whatever is sent as an argument.
+
+### `skipCapture = () => void`
+
+This function signals the app to skip the frame capturing process. This means that it will not capture frames from the
+video nor send them to Rekognition for processing.
+
+### `toggleVideoExecution = () => void`
+This function pauses/resumes the execution of the video. This can also pause during frame analysis and frame display
+
+### `replay = () => void`
+Restarts the video duration and starts play
+
+### loadFramesFromMem(frames)
+
+This function sets the timestamped frame object to whatever is sent as an argument.
 
 ## Learn More
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+You can learn more in
+the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
 To learn React, check out the [React documentation](https://reactjs.org/).
 
 ### Code Splitting
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+This section has moved
+here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
 
 ### Analyzing the Bundle Size
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+This section has moved
+here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
 
 ### Making a Progressive Web App
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+This section has moved
+here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
 
 ### Advanced Configuration
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+This section has moved
+here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
 
 ### Deployment
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+This section has moved
+here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
 
 ### `npm run build` fails to minify
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+This section has moved
+here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)

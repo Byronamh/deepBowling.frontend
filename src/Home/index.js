@@ -41,6 +41,7 @@ class Home extends React.Component {
         window.loadFramesFromMem = this.loadFramesFromMem;// load frames via console
         window.skipCapture = this.skipCapture; // skip capture/load process
         window.toggleVideoExecution = this.toggleVideoExecution // pause/play via command
+        window.useCustomLabels = true;
         console.log('running project with env:', process.env)
 
     }
@@ -119,7 +120,7 @@ class Home extends React.Component {
         if (this.state.capture) {
             this.updateLoader(true, 'Sending frames for processing');
             this.state.framePictureArray.length = 20
-            const rawTimestampedFrames = await processFrames(this.state.framePictureArray)
+            const rawTimestampedFrames = await processFrames(this.state.framePictureArray, window.useCustomLabels || true)
             this.updateLoader(true, 'Building View Boxes');
             const timestampedFrames = this.frameBuilder(rawTimestampedFrames);
             this.setState({
