@@ -1,13 +1,11 @@
 import "./styles.css";
 import React from 'react';
 
-let cache=[];
 class FrameViewer extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {
-            entityCache: {}
-        }
+
+        this.cache = []
     }
 
     drawBox = ({computedHeight, computedWidth, LeftPadding, topPadding}, {Label, Confidence}, key) => {
@@ -37,8 +35,8 @@ class FrameViewer extends React.Component {
                 return boxesConfig.map((bc, i) => this.drawBox(bc, {Label, Confidence}, i))
             }
         )
-        const oldCache = cache;
-        cache = [...returnable]
+        const oldCache = this.cache;
+        this.cache = [...returnable];
         return [...returnable, ...oldCache]
     }
 
