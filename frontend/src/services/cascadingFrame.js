@@ -6,9 +6,14 @@ const configs = {
 const setConfigs = (canvasWidth, canvasHeight) => {
     configs.canvasWidth = canvasWidth;
     configs.canvasHeight = canvasHeight;
-    configs.ready = true;
 }
-const buildBox = ({Height, Left, Top, Width}) => {
+const buildBox = (
+    {
+        Height = 1,
+        Left = 0,
+        Top = 0,
+        Width = 1
+    }) => {
     const computedHeight = (Height * configs.canvasHeight).toFixed(2);
     const computedWidth = (Width * configs.canvasWidth).toFixed(2);
     const LeftPadding = (Left * configs.canvasWidth).toFixed(2);
@@ -19,31 +24,38 @@ const buildBox = ({Height, Left, Top, Width}) => {
 
 const entities = {};
 
-const buildFrames = ({Label, Timestamp}) => {
-    const {Instances, Name, Confidence} = Label;
-    const boxes = Instances.map(({BoundingBox}) => buildBox(BoundingBox))
+const buildFrames = (frames) => {
+    const timestamps = Object.keys(frames);
+    timestamps.forEach(timestamp => {
+        const labelsInEpoch = frames[timestamp];
+        labelsInEpoch.forEach((data) => {
+            const {Confidence, Instances = [], Name, Geometry = {}} = data
+            const boxes = Instances.map(data => buildBox(data))
+            if (Geometry) {
+                const {BoundingBox} = Geometry;
+                boxes.push(buildBox(BoundingBox))
+            }
+            if (!boxes.length) {
+                boxes.push(buildBox({}));
+            }
 
-    if (!boxes.length) {
-        return;
-    }
+            if (entities[timestamp] === undefined) {
+                entities[timestamp] = {};
+            }
+            entities[timestamp][Name] = [boxes, Confidence];
 
-    if (entities[Timestamp] === undefined) {
-        entities[Timestamp] = {};
-    }
-    entities[Timestamp][Name] = [boxes, Confidence];
+        })
+
+    })
+
 }
 
-//used for testing
-window.buildFrames = (canvasHeight, canvasWidth, labelArray) => {
-    setConfigs(canvasHeight, canvasWidth);
-    labelArray.forEach(buildFrames);
-    console.log(entities)
-    return entities
-}
 
-export default (canvasHeight, canvasWidth, labelArray) => {
-    setConfigs(canvasHeight, canvasWidth);
-    labelArray.forEach(buildFrames);
+export default (canvasWidth, canvasHeight) => {
+    setConfigs(canvasWidth, canvasHeight);
+    return (frames) => {
+        buildFrames(frames);
+        return entities
+    };
 
-    return entities
 }

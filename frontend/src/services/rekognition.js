@@ -1,6 +1,10 @@
-import {RekognitionClient, StartLabelDetectionCommand, GetLabelDetectionCommand} from "@aws-sdk/client-rekognition"; // ES Modules import
-const MAX_WAIT_ITERATIONS = 8;
-const BUCKET_KEY = process.env.REACT_APP_STORAGE_BUCKET || 'storage.deepbowling';
+import {
+    RekognitionClient,
+    DetectLabelsCommand,
+    DetectCustomLabelsCommand,
+    StartProjectVersionCommand,
+    StopProjectVersionCommand
+} from "@aws-sdk/client-rekognition"; // ES Modules import
 const config = {
     region: process.env.REACT_APP_AWS_REGION || "us-east-1",
     credentials: {
@@ -8,70 +12,49 @@ const config = {
         secretAccessKey: process.env.REACT_APP_AWS_SECRET_ACCESS_KEY,
     }
 }
+let useCustomLabels = true;
+
 const rekognitionClient = new RekognitionClient(config);
 
-const getJobStatus = async JobId => {
-    const getVideoLabelsRequest = new GetLabelDetectionCommand({JobId});
+const processFrame = async imageData => {
 
-    const videoLabelsResponse = await rekognitionClient.send(getVideoLabelsRequest);
-    const {JobStatus, Labels, StatusMessage} = videoLabelsResponse;
-    return {JobStatus, Labels, StatusMessage}
-}
-window.getJobStatus = getJobStatus;
-
-const processVideo = async filename => {
-    const returnable = {
-        Labels: [],
-        message: ''
+    const configs = {
+        Image: {Bytes: imageData},
+        ProjectVersionArn: process.env.REACT_APP_AWS_MODEL_ARN,
+        MinConfidence: 80
+    };
+    let imageProcessReq = new DetectCustomLabelsCommand(configs);
+    if (!useCustomLabels) {
+        imageProcessReq = new DetectLabelsCommand(configs);
     }
-    // const videoProcessJobRequest = new StartLabelDetectionCommand({
-    //         Video: {
-    //             S3Object: {
-    //                 Bucket: BUCKET_KEY,
-    //                 Name: filename
-    //             }
-    //         },
-    //         MinConfidence: 80
-    //     }
-    // );
-    // console.info('Starting rekognition task')
-    // const {JobId} = await rekognitionClient.send(videoProcessJobRequest);
-    // console.info(`Rekognition task started with JobId: ${JobId}`)
-    const getVideoLabelsRequest = new GetLabelDetectionCommand({JobId:'354968ae604cdad9030e5d13bf32d6ff46112711351ed41db7d8fde4b5e731cb'});
 
-    console.info('Waiting for job to complete')
-    let ct = 0;
-    while (1) {
-        ct++;
-        const videoLabelsResponse = await rekognitionClient.send(getVideoLabelsRequest);
-        const {JobStatus, Labels, StatusMessage} = videoLabelsResponse;
-
-        console.info(`Checked on job status, current status is: ${JobStatus}`)
-        if (ct === MAX_WAIT_ITERATIONS) {
-            console.warn('MAX NUMBER OF WAIT TIME REACHED, TRY AGAIN?')
-            returnable.message = 'Reached max amount of wait time';
-            break;
-        }
-        if (JobStatus === "IN_PROGRESS") {
-            await delay(10)
-        }
-        if (JobStatus === 'SUCCEEDED') {
-            returnable.Labels = Labels;
-            returnable.message = 'Analisis complete'
-            break;
-        }
-        if (JobStatus === 'FAILED') {
-
-            returnable.Labels = Labels;
-            returnable.message = StatusMessage
-            break;
-        }
-    }
-    return returnable;
+    return rekognitionClient.send(imageProcessReq);
 }
-window.processVideo = processVideo;
 
-const delay = (n) => new Promise(resolve => setTimeout(resolve, n * 1000));//Don't do this in production. Instead sub to SNS topic
+window.startSession = async () => {
+    const initProjectCmd = new StartProjectVersionCommand({
+        MinInferenceUnits: 1,
+        ProjectVersionArn: process.env.REACT_APP_AWS_MODEL_ARN
+    });
+    await rekognitionClient.send(initProjectCmd)
+}
+
+window.endSession = async () => {
+    const endProjectCmd = new StopProjectVersionCommand ({
+        ProjectVersionArn: process.env.REACT_APP_AWS_MODEL_ARN
+    });
+    await rekognitionClient.send(endProjectCmd)
+}
+const processFrames = async (frames, clientUseCustomLabels = true) => {
+    useCustomLabels = clientUseCustomLabels
+
+    const returnableFrames = {};
+    while (frames.length) {
+        const [timestamp, frameData] = frames.shift();
+        returnableFrames[timestamp] = (await processFrame(frameData))[useCustomLabels ? 'CustomLabels' : 'Labels'];
+    }
+    return returnableFrames
+}
 
 
-export default processVideo;
+export default processFrames;

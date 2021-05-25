@@ -6,27 +6,25 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 
-import getPresignedUrl from "../services/getPresignedUrl";
-import uploadVideoToBucket from "../services/uploadVideoToBucket";
-import processVideo from "../services/rekognition";
+import captureVideoFrame from "capture-video-frame";
+import delay from "../utils/delay";
+
+import processFrames from "../services/rekognition";
 import frameBuilderFunction from "../services/cascadingFrame"
 import Loader from "../Loader";
 import ReactPlayer from 'react-player'
 
-import FFmpeg from '@ffmpeg/ffmpeg'
 import FrameViewer from "../FrameViewer";
+import captureFrame from "../utils/captureFrame";
 
 class Home extends React.Component {
     constructor(props) {
         super(props);
         this.handleSubmit = this.handleSubmit.bind(this);
+        window.frameBuffering = true;
         this.state = {
             showvideo: false,       // toggles display of video or form
             localPlayerUrl: '',     // stores the url used in the player
-            s3UploadData: {         // stores data related to the s3 upload
-                uploadURL: '',
-                filename: ''
-            },
             file: null,             // stores a ref to the selected file
             loader: {               // configs for the loader
                 loading: false,
@@ -38,7 +36,8 @@ class Home extends React.Component {
             readTimestamps: {},     // stores the timestamps that were already processed for speedup
             framesToShow: [],       // frames to paint in current tick
             prevTimestamp: 0,
-            vp: {x: 0, y: 0}   // video player x,y
+            capture: true,
+            framePictureArray: [],
         }
         console.log('running project with env:', process.env)
     }
@@ -68,11 +67,23 @@ class Home extends React.Component {
         console.log('file set')
     }
 
-    getPlayableVideoUrl = filename => `https://s3.amazonaws.com/${process.env.REACT_APP_STORAGE_BUCKET}/${filename}`
+    handleSubmit = async (event) => {
+        event.preventDefault();
+        if (!this.state.file) {
+            alert('pick a file first')
+            return;
+        }
+        this.updateLoader(true, 'Processing the video');
+
+        this.setState({
+            showVideo: true,
+            playVideo: true,
+            localPlayerUrl: URL.createObjectURL(this.state.file)
+        });
+    }
 
     updateVideoTick = ({playedSeconds}) => {
         const playedSecondsMs = playedSeconds * 1000;
-        console.log(playedSecondsMs)
         const {cachedTimestampKeys, readTimestamps, prevTimestamp} = this.state;
 
         const framesToShow = cachedTimestampKeys.filter(
@@ -81,54 +92,39 @@ class Home extends React.Component {
         framesToShow.forEach(timestamp => readTimestamps[timestamp] = true);
         this.setState({prevTimestamp: playedSecondsMs, readTimestamps, framesToShow});
     }
-
-    handleSubmit = async (event) => {
-        event.preventDefault();
-        if (!this.state.file) {
-            alert('pick a file first')
-            return;
+    videoOnProgress = ({playedSeconds}) => {
+        if (this.state.capture) {
+            const frame = captureFrame(this.player.wrapper.firstChild);
+            this.state.framePictureArray.push([Math.floor(playedSeconds * 1000), frame]);
+        } else {
+            this.updateVideoTick({playedSeconds})
+        }
+    }
+    videoOnEnd = async () => {
+        window.replay = () => {
+            this.player.wrapper.firstChild.currentTime = 0
+            this.setState({readTimestamps: [], prevTimestamp: 0})
         }
 
-
-        this.updateLoader(true, 'Setting up the backend');
-        const s3UploadData = await getPresignedUrl();
-        console.info('Fetch of presigned url complete', s3UploadData);
-
-        this.setState({s3UploadData});
-
-        this.updateLoader(true, 'Uploading video to bucket');
-        await uploadVideoToBucket(this.state.s3UploadData.uploadURL, this.state.file);
-
-        this.updateLoader(true, 'Processing the video');
-
-        this.setState({localPlayerUrl: this.getPlayableVideoUrl(this.state.s3UploadData.filename)})
-
-        const {Labels, message} = await processVideo(this.state.s3UploadData.filename);
-        alert(message);
-        this.updateLoader(true, 'Building frames for painting');
-
-        const timestampedFrames = frameBuilderFunction(920, 530, Labels);
-        this.updateLoader(false, '');
-        this.setState({
-            showVideo: true,
-            timestampedFrames,
-            cachedTimestampKeys: Object.keys(timestampedFrames).map(k => +k)
-        })
-
-        this.updateLoader(true, 'Loading WASM modules');
-
-        const {createFFmpeg, fetchFile} = FFmpeg;
-        const ffmpeg = createFFmpeg();
-        await ffmpeg.load();
-        ffmpeg.FS('writeFile', this.state.s3UploadData.filename, await fetchFile(this.state.file));
-
-        this.updateLoader(true, 'Making file compatible with browser');
-        await ffmpeg.run('-i', this.state.s3UploadData.filename, 'output.mp4');
-        const data = ffmpeg.FS('readFile', 'output.mp4');
-        const localPlayerUrl = URL.createObjectURL(new Blob([data.buffer], {type: 'video/mp4'}));
-        this.updateLoader(false, '');
-
-        this.setState({localPlayerUrl, playVideo: true})
+        this.frameBuilder = frameBuilderFunction(this.player.wrapper.clientWidth, this.player.wrapper.clientHeight);
+        if (this.state.capture) {
+            this.updateLoader(true, 'Sending frames for processing');
+            this.state.framePictureArray.length = 20
+            const rawTimestampedFrames = await processFrames(this.state.framePictureArray)
+            this.updateLoader(true, 'Building View Boxes');
+            const timestampedFrames = this.frameBuilder(rawTimestampedFrames);
+            this.setState({
+                cachedTimestampKeys: Object.keys(timestampedFrames).map(k => +k),
+                timestampedFrames,
+                capture: false,
+                playVideo: true
+            });
+            this.updateLoader(false, '');
+            this.player.wrapper.firstChild.currentTime = 0
+        }
+    }
+    getVideoRef = player => {
+        this.player = player
     }
 
     render() {
@@ -161,15 +157,18 @@ class Home extends React.Component {
                                 this.state.showVideo &&
                                 <div className={"position-relative"}>
                                     <ReactPlayer
+                                        ref={this.getVideoRef}
                                         url={this.state.localPlayerUrl}
                                         width='100%'
                                         height='100%'
                                         controls={true}
-                                        onProgress={this.updateVideoTick}
-                                        progressInterval={100}
+                                        onProgress={this.videoOnProgress}
+                                        progressInterval={120}
                                         playing={this.state.playVideo}
+                                        onEnded={this.videoOnEnd}
                                     />
-                                    <FrameViewer frames={this.state.timestampedFrames[this.state.framesToShow] || {}}/>
+                                    <FrameViewer
+                                        frames={this.state.timestampedFrames[this.state.framesToShow] || {}}/>
                                 </div>
                             }
 

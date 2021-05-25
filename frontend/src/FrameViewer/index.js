@@ -35,8 +35,9 @@ class FrameViewer extends React.Component {
                 return boxesConfig.map((bc, i) => this.drawBox(bc, {Label, Confidence}, i))
             }
         )
-        const oldCache = this.cache;
+        const oldCache = window.frameBuffering ? this.cache : [];
         this.cache = [...returnable];
+
         return [...returnable, ...oldCache]
     }
 
