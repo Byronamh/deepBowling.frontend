@@ -6,8 +6,34 @@
     top: 0;
     left: 0;
 }
-.frame-viewer-inner{
+
+.frame-viewer-inner, .frame-box-inner {
     height: inherit;
     width: inherit;
     position: relative;
+}
+
+.frame-box {
+    position: absolute;
+    border: solid 2px;
+    border-color: dodgerblue;
+    transition: all linear 50ms;
+    overflow: hidden;
+}
+
+.frame-label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: dodgerblue;
+    color: white;
+}
+
+.frame-confidence {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    color: dodgerblue;
+    font-weight: bold;
+    font-size: 0.8rem;
 }

@@ -21,19 +21,24 @@ class Home extends React.Component {
         super(props);
         this.handleSubmit = this.handleSubmit.bind(this);
         this.state = {
-            showvideo: false,
-            localPlayerUrl: '',
-            s3UploadData: {
+            showvideo: false,       // toggles display of video or form
+            localPlayerUrl: '',     // stores the url used in the player
+            s3UploadData: {         // stores data related to the s3 upload
                 uploadURL: '',
                 filename: ''
             },
-            file: null,
-            loader: {
+            file: null,             // stores a ref to the selected file
+            loader: {               // configs for the loader
                 loading: false,
                 message: 'default message'
             },
-            timestampedFrames: [],
-            playedSeconds: 0
+            timestampedFrames: [],  // parsed rekognition response
+            playedSeconds: 0,       // last video tick
+            playVideo: false,       // toggles play/pause on video
+            readTimestamps: {},     // stores the timestamps that were already processed for speedup
+            framesToShow: [],       // frames to paint in current tick
+            prevTimestamp: 0,
+            vp: {x: 0, y: 0}   // video player x,y
         }
         console.log('running project with env:', process.env)
     }
@@ -65,8 +70,17 @@ class Home extends React.Component {
 
     getPlayableVideoUrl = filename => `https://s3.amazonaws.com/${process.env.REACT_APP_STORAGE_BUCKET}/${filename}`
 
-    updateVideoTick = ({playedSeconds}) => this.setState({playedSeconds})
+    updateVideoTick = ({playedSeconds}) => {
+        const playedSecondsMs = playedSeconds * 1000;
+        console.log(playedSecondsMs)
+        const {cachedTimestampKeys, readTimestamps, prevTimestamp} = this.state;
 
+        const framesToShow = cachedTimestampKeys.filter(
+            timestamp => !readTimestamps[timestamp] && timestamp >= prevTimestamp && timestamp < playedSecondsMs
+        );
+        framesToShow.forEach(timestamp => readTimestamps[timestamp] = true);
+        this.setState({prevTimestamp: playedSecondsMs, readTimestamps, framesToShow});
+    }
 
     handleSubmit = async (event) => {
         event.preventDefault();
@@ -93,15 +107,18 @@ class Home extends React.Component {
         alert(message);
         this.updateLoader(true, 'Building frames for painting');
 
-        const timestampedFrames = frameBuilderFunction(500, 300, Labels);
-        console.info('Frames built: ', timestampedFrames);
+        const timestampedFrames = frameBuilderFunction(920, 530, Labels);
         this.updateLoader(false, '');
-        this.setState({showVideo: true, timestampedFrames})
+        this.setState({
+            showVideo: true,
+            timestampedFrames,
+            cachedTimestampKeys: Object.keys(timestampedFrames).map(k => +k)
+        })
 
         this.updateLoader(true, 'Loading WASM modules');
 
         const {createFFmpeg, fetchFile} = FFmpeg;
-        const ffmpeg = createFFmpeg({log: true});
+        const ffmpeg = createFFmpeg();
         await ffmpeg.load();
         ffmpeg.FS('writeFile', this.state.s3UploadData.filename, await fetchFile(this.state.file));
 
@@ -111,7 +128,7 @@ class Home extends React.Component {
         const localPlayerUrl = URL.createObjectURL(new Blob([data.buffer], {type: 'video/mp4'}));
         this.updateLoader(false, '');
 
-        this.setState({localPlayerUrl})
+        this.setState({localPlayerUrl, playVideo: true})
     }
 
     render() {
@@ -149,9 +166,10 @@ class Home extends React.Component {
                                         height='100%'
                                         controls={true}
                                         onProgress={this.updateVideoTick}
-                                        progressInterval={50}
+                                        progressInterval={100}
+                                        playing={this.state.playVideo}
                                     />
-                                    <FrameViewer frames={this.state.timestampedFrames} tickTime={this.state.playedSeconds}/>
+                                    <FrameViewer frames={this.state.timestampedFrames[this.state.framesToShow] || {}}/>
                                 </div>
                             }
 
